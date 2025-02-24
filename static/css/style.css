@@ -1,0 +1,39 @@
+.mode-info {
+    margin-bottom: 1rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+.mode-info:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.feather {
+    width: 16px;
+    height: 16px;
+    vertical-align: text-bottom;
+    margin-right: 4px;
+}
+
+.btn .feather {
+    margin-right: 8px;
+}
+
+.navbar-brand .feather {
+    margin-right: 8px;
+    width: 20px;
+    height: 20px;
+}
+
+.footer {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    background-color: var(--bs-dark);
+    border-top: 1px solid var(--bs-border-color);
+}
+
+main {
+    margin-bottom: 100px;
+}

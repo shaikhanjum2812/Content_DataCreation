@@ -1,0 +1,59 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Upload Word Document</h4>
+            </div>
+            <div class="card-body">
+                <form id="uploadForm" action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="file" class="form-label">Select Word Document (.docx)</label>
+                        <input type="file" class="form-control" id="file" name="file" accept=".docx" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="mode" class="form-label">Conversion Mode</label>
+                        <select class="form-select" id="mode" name="mode" required>
+                            <option value="reader">Reader Mode</option>
+                            <option value="debug">Debug Mode</option>
+                            <option value="solver">Solver Mode</option>
+                        </select>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i data-feather="upload"></i> Convert to Excel
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="generateTextFiles()">
+                            <i data-feather="file-text"></i> Generate Text Files
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">Mode Description</h5>
+            </div>
+            <div class="card-body">
+                <div class="mode-info" id="readerInfo">
+                    <h6>Reader Mode</h6>
+                    <p>Extracts structured data from the document including exercise IDs, titles, descriptions, and question details.</p>
+                </div>
+                <div class="mode-info" id="debugInfo">
+                    <h6>Debug Mode</h6>
+                    <p>Extracts debugging information and assertion statements from the document.</p>
+                </div>
+                <div class="mode-info" id="solverInfo">
+                    <h6>Solver Mode</h6>
+                    <p>Extracts solver-specific data and function implementations.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
