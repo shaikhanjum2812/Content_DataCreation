@@ -7,8 +7,8 @@ import tempfile
 import shutil
 from zipfile import ZipFile
 
-def extract_reader_data(doc):
-    """Extract data using Reader mode"""
+def extract_data(doc):
+    """Extract data from Word document into two sheets format"""
     sheet1_data = []
     sheet2_data = []
 
@@ -40,8 +40,8 @@ def extract_reader_data(doc):
 
                 if field == 'labels':  # Last field, append the record
                     sheet1_data.append(list(current_data.values()))
-                    current_data = {k: '' if isinstance(v, str) else 0
-                                    for k, v in current_data.items()}
+                    current_data = {k: '' if isinstance(v, str) else 0 
+                                  for k, v in current_data.items()}
                 break
 
         # Process Sheet2 data
@@ -51,28 +51,13 @@ def extract_reader_data(doc):
         elif "Options:" in text and "answer:" in text:
             try:
                 question, options_answer = text.split("Options:")
-                options, answer_part = options_answer.split("answer:")
-
-                hint = ""
-                if "Hint:" in answer_part:
-                    answer, hint = answer_part.split("Hint:")
-                else:
-                    answer = answer_part
-
+                options, answer = options_answer.split("answer:")
                 answer = answer.strip()
-                hint = hint.strip()
                 options = options.strip()
-
-                answer_type = "checkbox" if ',' in answer else "radio"
-                if answer_type == "radio":
-                    try:
-                        answer = int(answer)
-                    except ValueError:
-                        answer = answer
 
                 sheet2_data.append([
                     current_exid, question_key, question.strip(),
-                    answer_type, options, answer, hint
+                    "multiple_choice", options, answer
                 ])
                 question_key += 1
 
@@ -80,90 +65,6 @@ def extract_reader_data(doc):
                 logging.error(f"Error parsing question: {text}. Error: {str(e)}")
 
     return sheet1_data, sheet2_data
-
-def extract_debug_data(doc):
-    """Extract data using Debug mode"""
-    ex_data = []
-    qa_data = []
-
-    current_entry = {}
-    current_exid = ""
-    key = 1
-    collecting_description = False
-
-    for para in doc.paragraphs:
-        text = para.text.strip()
-
-        if text.startswith("exid :"):
-            if current_entry:
-                ex_data.append(current_entry)
-            current_entry = {'exid': text.split("exid :")[1].strip()}
-            current_exid = current_entry['exid']
-            collecting_description = False
-            key = 1
-        elif text.startswith("title :"):
-            current_entry['title'] = text.split("title :")[1].strip()
-            collecting_description = False
-        elif text.startswith("description :"):
-            current_entry['description'] = text.split("description :")[1].strip()
-            collecting_description = True
-        elif "assert" in text:
-            qa_data.append([current_exid, key, current_entry.get('title', ''), 'assert', '', text])
-            key += 1
-        elif collecting_description:
-            current_entry['description'] += "\n" + text
-
-    if current_entry:
-        ex_data.append(current_entry)
-
-    return list(map(lambda x: [
-        x.get('exid', ''), x.get('title', ''), x.get('description', ''),
-        '', '', 0, '', '', '', 0, 0, 0, '', ''
-    ], ex_data)), qa_data
-
-def extract_solver_data(doc):
-    """Extract data using Solver mode"""
-    ex_data = []
-    qa_data = []
-
-    current_entry = {}
-    current_exid = ""
-    key = 1
-    label = ""
-    collecting_description = False
-
-    for para in doc.paragraphs:
-        text = para.text.strip()
-
-        if text.startswith("exid :"):
-            if current_entry:
-                ex_data.append(current_entry)
-            current_entry = {'exid': text.split("exid :")[1].strip()}
-            current_exid = current_entry['exid']
-            collecting_description = False
-            key = 1
-        elif text.startswith("description :"):
-            current_entry['description'] = text.split("description :")[1].strip()
-            collecting_description = True
-            if "Function" in text:
-                label_start = text.find("Function") + len("Function")
-                label = text[label_start:].strip().split()[0].rstrip('()')
-            elif "function" in text:
-                label_start = text.find("function") + len("function")
-                label = text[label_start:].strip().split()[0].rstrip('()')
-        elif "assert" in text:
-            qa_data.append([current_exid, key, label, 'assert', '', text])
-            key += 1
-        elif collecting_description:
-            current_entry['description'] += "\n" + text
-
-    if current_entry:
-        ex_data.append(current_entry)
-
-    return list(map(lambda x: [
-        x.get('exid', ''), x.get('title', ''), x.get('description', ''),
-        '', '', 0, '', '', '', 0, 0, 0, '', ''
-    ], ex_data)), qa_data
 
 def extract_code_with_indentation(doc):
     """
@@ -285,34 +186,28 @@ def create_text_files(input_path):
         logging.error(f"Error creating text files: {str(e)}")
         raise
 
-def convert_word_to_excel(input_path, output_path, mode='reader'):
+def convert_word_to_excel(input_path, output_path):
     """
-    Convert a Word document to Excel format with specific formatting based on mode.
+    Convert a Word document to Excel format with specific sheets.
 
     Args:
         input_path (str): Path to input Word document
         output_path (str): Path where Excel file will be saved
-        mode (str): Conversion mode ('reader', 'debug', or 'solver')
     """
     try:
         # Load the Word document
         doc = Document(input_path)
 
-        # Extract data based on mode
-        if mode == 'debug':
-            sheet1_data, sheet2_data = extract_debug_data(doc)
-        elif mode == 'solver':
-            sheet1_data, sheet2_data = extract_solver_data(doc)
-        else:  # reader mode
-            sheet1_data, sheet2_data = extract_reader_data(doc)
+        # Extract data
+        sheet1_data, sheet2_data = extract_data(doc)
 
         # Create DataFrames for both sheets
         columns_sheet1 = ['exid', 'title', 'description', 'category', 
                          'subcategoryid', 'level', 'language', 'qlocation', 
                          'module', 'ex_seq', 'cat_seq', 'subcat_seq', 
                          'league', 'labels']
-        columns_sheet2 = ['exid', 'key', 'label', 'type', 'options', 
-                         'answer', 'Hint']
+        columns_sheet2 = ['exid', 'key', 'question', 'type', 'options', 
+                         'answer']
 
         df_sheet1 = pd.DataFrame(sheet1_data, columns=columns_sheet1)
         df_sheet2 = pd.DataFrame(sheet2_data, columns=columns_sheet2)
@@ -326,7 +221,7 @@ def convert_word_to_excel(input_path, output_path, mode='reader'):
         zip_file_path = create_text_files(input_path)
         logging.debug(f"Created zip file of code extracts: {zip_file_path}")
 
-        logging.debug(f"Successfully converted {input_path} to Excel using {mode} mode")
+        logging.debug(f"Successfully converted {input_path} to Excel")
         return True
 
     except Exception as e:
