@@ -31,9 +31,13 @@ function generateTextFiles() {
         return;
     }
 
-    const formData = new FormData();
-    formData.append('file', fileInput.files[0]);
+    // Show loading indicator
+    const btn = document.querySelector('button[onclick="generateTextFiles()"]');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i data-feather="loader" class="loader"></i> Generating...';
+    btn.disabled = true;
 
+    // Create and submit form
     const form = document.createElement('form');
     form.method = 'POST';
     form.action = '/generate-text-files';
@@ -44,5 +48,23 @@ function generateTextFiles() {
 
     document.body.appendChild(form);
     form.submit();
-    document.body.removeChild(form);
+
+    // Reset button after a short delay
+    setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        feather.replace();
+    }, 2000);
 }
+
+// Add loading animation styles
+const style = document.createElement('style');
+style.textContent = `
+    .loader {
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+        100% { transform: rotate(360deg); }
+    }
+`;
+document.head.appendChild(style);
