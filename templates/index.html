@@ -16,16 +16,19 @@
                     {% endif %}
                 {% endwith %}
 
-                <form action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data">
+                <form action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data" id="uploadForm">
                     <div class="mb-3">
                         <label for="file" class="form-label">Select Word Document (.docx)</label>
                         <input type="file" class="form-control" id="file" name="file" accept=".docx" required>
                         <div class="form-text">Upload a Word document to convert it into an Excel file with structured data.</div>
                     </div>
 
-                    <div class="d-grid">
+                    <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-primary">
                             <i class="bi bi-file-earmark-excel"></i> Convert to Excel
+                        </button>
+                        <button type="submit" class="btn btn-secondary" formaction="{{ url_for('extract_code_files') }}">
+                            <i class="bi bi-file-earmark-text"></i> Extract Code Files
                         </button>
                     </div>
                 </form>
@@ -47,7 +50,7 @@
                     </li>
                 </ul>
                 <div class="alert alert-info">
-                    <i class="bi bi-info-circle"></i> The converter will also extract any code blocks into separate text files, which will be included in a zip file.
+                    <i class="bi bi-info-circle"></i> You can also extract code blocks into separate text files using the "Extract Code Files" button. Each file will be named according to its qlocation.
                 </div>
             </div>
         </div>
