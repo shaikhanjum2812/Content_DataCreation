@@ -181,36 +181,40 @@ def extract_code_with_indentation(doc):
     current_qlocation = ""
 
     for paragraph in doc.paragraphs:
-        text = paragraph.text.strip()
+        text = paragraph.text
 
-        if text.startswith("qlocation :"):  # Get the qlocation for file naming
+        if text.strip().startswith("qlocation :"):  # Get the qlocation for file naming
             # Extract only the .txt portion from the qlocation
             qlocation_text = text.split("qlocation :")[1].strip()
             if '.txt' in qlocation_text:
                 current_qlocation = qlocation_text.split(',')[0].strip()  # Get text before comma if exists
             else:
                 current_qlocation = f"code_{len(queries) + 1}.txt"  # Fallback name if no .txt found
-        elif text.startswith("Code:"):  # Start of a code block
+        elif text.strip().startswith("Code:"):  # Start of a code block
             collecting_code = True
             current_code = []  # Reset current code collection
-        elif "Answer the following questions:" in text and collecting_code:
+        elif "Answer the following questions:" in text.strip() and collecting_code:
             # End of a code block
             if current_qlocation:
+                # Join the code lines preserving original whitespace
+                code_content = '\n'.join(current_code)
                 queries.append({
                     "qlocation": current_qlocation,
-                    "code": "\n".join(current_code)  # Preserve original line formatting
+                    "code": code_content
                 })
                 current_qlocation = ""  # Reset qlocation
             collecting_code = False  # Reset flag
             current_code = []  # Reset collection for the next code block
         elif collecting_code:
-            current_code.append(text)  # Collect lines with original indentation
+            # Add the line with its original indentation
+            current_code.append(text)  # Store the raw text with indentation
 
     # Add the last code block if exists
     if collecting_code and current_code and current_qlocation:
+        code_content = '\n'.join(current_code)
         queries.append({
             "qlocation": current_qlocation,
-            "code": "\n".join(current_code)
+            "code": code_content
         })
 
     return queries
