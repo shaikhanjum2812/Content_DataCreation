@@ -168,6 +168,8 @@ def extract_solver_data(doc):
 def extract_code_with_indentation(doc):
     """
     Extracts code blocks from a Word document and maintains the original indentation.
+    The function looks for 'qlocation :' to determine the output filename, falling back to
+    CFSF{number}.txt if no qlocation is specified.
 
     Args:
         doc: Document - The loaded Word document
@@ -184,44 +186,60 @@ def extract_code_with_indentation(doc):
     for paragraph in doc.paragraphs:
         text = paragraph.text
 
-        if text.strip().startswith("qlocation :"):  # Get the qlocation for file naming
+        # Handle qlocation specification
+        # Example format in Word doc: "qlocation : filename.txt"
+        if text.strip().startswith("qlocation :"):
             qlocation_text = text.split("qlocation :")[1].strip()
             if '.txt' in qlocation_text:
-                current_qlocation = qlocation_text.split(',')[0].strip()  # Get text before comma if exists
-            else:
-                # Use CFSF format if no qlocation specified
-                current_qlocation = f"CFSF{query_count}.txt"
-        elif text.strip().startswith("C Code:") or text.strip().startswith("Code:"):  # Start of a code block
+                # Extract filename before any comma if present
+                # Example: "example.txt, other info" becomes "example.txt"
+                current_qlocation = qlocation_text.split(',')[0].strip()
+                logging.debug(f"Found qlocation specification: {current_qlocation}")
+
+        # Start collecting code when "C Code:" or "Code:" is found
+        elif text.strip().startswith("C Code:") or text.strip().startswith("Code:"):
             collecting_code = True
             current_code = []  # Reset current code collection
-        elif "Answer the following questions:" in text.strip() and collecting_code:
-            # End of a code block
-            if not current_qlocation:
+            if not current_qlocation:  # If no qlocation was specified before code block
                 current_qlocation = f"CFSF{query_count}.txt"
+                logging.debug(f"Using default qlocation: {current_qlocation}")
 
-            # Join the code lines preserving original whitespace
+        # Stop collecting code when answer section is reached
+        elif "Answer the following questions:" in text.strip() and collecting_code:
+            if not current_qlocation:  # Final fallback if somehow no qlocation was set
+                current_qlocation = f"CFSF{query_count}.txt"
+                logging.debug(f"Using fallback qlocation: {current_qlocation}")
+
+            # Preserve original indentation by joining lines
             code_content = '\n'.join(current_code)
             queries.append({
                 "qlocation": current_qlocation,
                 "code": code_content
             })
-            current_qlocation = ""  # Reset qlocation
-            collecting_code = False  # Reset flag
-            current_code = []  # Reset collection for the next code block
-            query_count += 1
-        elif collecting_code:
-            # Add the line with its original indentation
-            current_code.append(text)  # Store the raw text with indentation
+            logging.info(f"Extracted code block saved with qlocation: {current_qlocation}")
 
-    # Add the last code block if exists
+            # Reset for next code block
+            current_qlocation = ""
+            collecting_code = False
+            current_code = []
+            query_count += 1
+
+        # Collect code lines with original indentation
+        elif collecting_code:
+            current_code.append(text)
+
+    # Handle the last code block if exists
     if collecting_code and current_code:
         if not current_qlocation:
             current_qlocation = f"CFSF{query_count}.txt"
+            logging.debug(f"Using final fallback qlocation: {current_qlocation}")
+
         code_content = '\n'.join(current_code)
         queries.append({
             "qlocation": current_qlocation,
             "code": code_content
         })
+        logging.info(f"Extracted final code block saved with qlocation: {current_qlocation}")
 
     return queries
 
