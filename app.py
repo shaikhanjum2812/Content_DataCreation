@@ -39,6 +39,9 @@ def upload_file():
         return render_template('index.html')
 
     try:
+        # Get original filename without extension
+        original_name = os.path.splitext(secure_filename(file.filename))[0]
+
         # Create temporary files for processing
         with tempfile.NamedTemporaryFile(delete=False, suffix='.docx') as temp_input:
             file.save(temp_input.name)
@@ -47,11 +50,11 @@ def upload_file():
             # Convert the file using the selected mode
             convert_word_to_excel(temp_input.name, temp_output.name, mode)
 
-            # Send the converted file
+            # Send the converted file with original name
             return send_file(
                 temp_output.name,
                 as_attachment=True,
-                download_name=f'converted_{mode}.xlsx',
+                download_name=f'{original_name}_{mode}.xlsx',
                 mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             )
     except Exception as e:
@@ -83,6 +86,9 @@ def generate_text_files():
         return render_template('index.html')
 
     try:
+        # Get original filename without extension
+        original_name = os.path.splitext(secure_filename(file.filename))[0]
+
         # Create temporary file for processing
         with tempfile.NamedTemporaryFile(delete=False, suffix='.docx') as temp_input:
             file.save(temp_input.name)
@@ -90,11 +96,11 @@ def generate_text_files():
             # Generate text files and get the zip file path
             zip_path = create_text_files(temp_input.name)
 
-            # Send the zip file
+            # Send the zip file with original name
             return send_file(
                 zip_path,
                 as_attachment=True,
-                download_name='code_files.zip',
+                download_name=f'{original_name}_code_files.zip',
                 mimetype='application/zip'
             )
     except Exception as e:
