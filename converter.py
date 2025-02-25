@@ -179,38 +179,44 @@ def extract_code_with_indentation(doc):
     collecting_code = False
     current_code = []
     current_qlocation = ""
+    query_count = 1
 
     for paragraph in doc.paragraphs:
         text = paragraph.text
 
         if text.strip().startswith("qlocation :"):  # Get the qlocation for file naming
-            # Extract only the .txt portion from the qlocation
             qlocation_text = text.split("qlocation :")[1].strip()
             if '.txt' in qlocation_text:
                 current_qlocation = qlocation_text.split(',')[0].strip()  # Get text before comma if exists
             else:
-                current_qlocation = f"code_{len(queries) + 1}.txt"  # Fallback name if no .txt found
-        elif text.strip().startswith("Code:"):  # Start of a code block
+                # Use CFSF format if no qlocation specified
+                current_qlocation = f"CFSF{query_count}.txt"
+        elif text.strip().startswith("C Code:") or text.strip().startswith("Code:"):  # Start of a code block
             collecting_code = True
             current_code = []  # Reset current code collection
         elif "Answer the following questions:" in text.strip() and collecting_code:
             # End of a code block
-            if current_qlocation:
-                # Join the code lines preserving original whitespace
-                code_content = '\n'.join(current_code)
-                queries.append({
-                    "qlocation": current_qlocation,
-                    "code": code_content
-                })
-                current_qlocation = ""  # Reset qlocation
+            if not current_qlocation:
+                current_qlocation = f"CFSF{query_count}.txt"
+
+            # Join the code lines preserving original whitespace
+            code_content = '\n'.join(current_code)
+            queries.append({
+                "qlocation": current_qlocation,
+                "code": code_content
+            })
+            current_qlocation = ""  # Reset qlocation
             collecting_code = False  # Reset flag
             current_code = []  # Reset collection for the next code block
+            query_count += 1
         elif collecting_code:
             # Add the line with its original indentation
             current_code.append(text)  # Store the raw text with indentation
 
     # Add the last code block if exists
-    if collecting_code and current_code and current_qlocation:
+    if collecting_code and current_code:
+        if not current_qlocation:
+            current_qlocation = f"CFSF{query_count}.txt"
         code_content = '\n'.join(current_code)
         queries.append({
             "qlocation": current_qlocation,
