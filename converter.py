@@ -20,6 +20,7 @@ def extract_data(doc):
         'league': '', 'labels': ''
     }
     question_key = 1
+    collecting_questions = False
 
     for para in doc.paragraphs:
         text = para.text.strip()
@@ -47,8 +48,12 @@ def extract_data(doc):
         # Process Sheet2 data
         if text.startswith("exid :"):
             current_exid = text.split("exid :")[1].strip()
-            question_key = 1
-        elif "Options:" in text and "answer:" in text:
+            question_key = 1  # Reset question key for new exid
+            collecting_questions = False
+        elif "Answer the following questions:" in text:
+            collecting_questions = True  # Start collecting questions
+            question_key = 1  # Reset counter for new question set
+        elif collecting_questions and "Options:" in text and "answer:" in text:
             try:
                 label, options_answer = text.split("Options:")
                 options, answer = options_answer.split("answer:")
@@ -68,7 +73,7 @@ def extract_data(doc):
                         answer_type = "text"
 
                 sheet2_data.append([
-                    current_exid, question_key, label.strip(),  # Using label instead of question
+                    current_exid, question_key, label.strip(),
                     answer_type, options, answer
                 ])
                 question_key += 1
