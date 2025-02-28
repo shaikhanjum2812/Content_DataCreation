@@ -68,6 +68,31 @@
                         <div class="list-group-item">
                             <h6 class="mb-1">Sheet 2: qa_data</h6>
                             <p class="mb-0 text-muted">Contains question details including exid, key, question, type, options, and answers.</p>
+                            <div class="mt-3">
+                                <h6 class="mb-2">Question Types:</h6>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <span class="type-indicator type-number">
+                                        <i class="bi bi-123"></i> Number
+                                    </span>
+                                    <span class="type-indicator type-text">
+                                        <i class="bi bi-text-paragraph"></i> Text
+                                    </span>
+                                    <span class="type-indicator type-radio">
+                                        <i class="bi bi-record-circle"></i> Radio
+                                    </span>
+                                    <span class="type-indicator type-checkbox">
+                                        <i class="bi bi-check-square"></i> Checkbox
+                                    </span>
+                                </div>
+                                <div class="mt-2 small text-muted">
+                                    <ul class="mb-0">
+                                        <li><strong>Number:</strong> When the answer is a numeric value</li>
+                                        <li><strong>Text:</strong> When the answer is plain text</li>
+                                        <li><strong>Radio:</strong> When there are options with a single answer</li>
+                                        <li><strong>Checkbox:</strong> When there are options with multiple answers</li>
+                                    </ul>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
