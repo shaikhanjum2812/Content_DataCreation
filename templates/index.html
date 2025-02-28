@@ -3,54 +3,82 @@
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-8">
-        <div class="card">
+        <div class="card mb-4">
             <div class="card-header">
-                <h4 class="mb-0">Word to Excel Converter</h4>
+                <h4 class="mb-0">
+                    <i class="bi bi-file-earmark-arrow-up"></i>
+                    Document Converter
+                </h4>
             </div>
             <div class="card-body">
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
                         {% for category, message in messages %}
-                            <div class="alert alert-{{ category }}">{{ message }}</div>
+                            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                                <i class="bi bi-info-circle me-2"></i>
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
                         {% endfor %}
                     {% endif %}
                 {% endwith %}
 
                 <form action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data" id="uploadForm">
-                    <div class="mb-3">
-                        <label for="file" class="form-label">Select Word Document (.docx)</label>
-                        <input type="file" class="form-control" id="file" name="file" accept=".docx" required>
-                        <div class="form-text">Upload a Word document to convert it into an Excel file with structured data.</div>
+                    <div class="mb-4">
+                        <label for="file" class="form-label">
+                            <i class="bi bi-file-earmark-word"></i>
+                            Select Word Document
+                        </label>
+                        <input type="file" class="form-control form-control-lg" id="file" name="file" accept=".docx" required>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle-fill"></i>
+                            Upload a Word document (.docx) to convert it into structured data formats
+                        </div>
                     </div>
 
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-file-earmark-excel"></i> Convert to Excel
+                    <div class="d-grid gap-3">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-file-earmark-excel"></i>
+                            Convert to Excel
                         </button>
-                        <button type="submit" class="btn btn-secondary" formaction="{{ url_for('extract_code_files') }}">
-                            <i class="bi bi-file-earmark-text"></i> Extract Code Files
+                        <button type="submit" class="btn btn-secondary btn-lg" formaction="{{ url_for('extract_code_files') }}">
+                            <i class="bi bi-file-earmark-code"></i>
+                            Extract Code Files
                         </button>
                     </div>
                 </form>
             </div>
         </div>
 
-        <div class="card mt-4">
+        <div class="card">
             <div class="card-header">
-                <h5 class="mb-0">Output Format</h5>
+                <h5 class="mb-0">
+                    <i class="bi bi-info-circle"></i>
+                    Output Format Details
+                </h5>
             </div>
             <div class="card-body">
-                <h6>Excel File Structure</h6>
-                <ul class="list-unstyled">
-                    <li><strong>Sheet 1 (ex_data):</strong>
-                        <p>Contains exercise metadata including exid, title, description, category, and other fields.</p>
-                    </li>
-                    <li><strong>Sheet 2 (qa_data):</strong>
-                        <p>Contains question details including exid, key, question, type, options, and answers.</p>
-                    </li>
-                </ul>
+                <div class="mb-4">
+                    <h6 class="fw-bold">Excel File Structure</h6>
+                    <div class="list-group">
+                        <div class="list-group-item">
+                            <h6 class="mb-1">Sheet 1: ex_data</h6>
+                            <p class="mb-0 text-muted">Contains exercise metadata including exid, title, description, category, and other fields.</p>
+                        </div>
+                        <div class="list-group-item">
+                            <h6 class="mb-1">Sheet 2: qa_data</h6>
+                            <p class="mb-0 text-muted">Contains question details including exid, key, question, type, options, and answers.</p>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="alert alert-info">
-                    <i class="bi bi-info-circle"></i> You can also extract code blocks into separate text files using the "Extract Code Files" button. Each file will be named according to its qlocation.
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-lightbulb-fill fs-4 me-2"></i>
+                        <div>
+                            <strong>Pro Tip:</strong> Use the "Extract Code Files" button to get code blocks as separate text files, named according to their qlocation.
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
