@@ -51,13 +51,20 @@ def extract_data(doc):
             current_exid = text.split("exid :")[1].strip()
             question_key = 1  # Reset question key for new exid
             collecting_questions = False
-            current_question = None
         elif text == "Answer the following questions:":
-            collecting_questions = True  # Start collecting questions
-            question_key = 1  # Reset counter for new question set
+            collecting_questions = True
+            logging.debug("Started collecting questions")
         elif collecting_questions:
-            if text.startswith("Answer:"):
-                if current_question:  # Make sure we have a question to process
+            # Check for numbered question pattern (e.g., "1)", "2)")
+            import re
+            question_match = re.match(r'^\d+\)(.*?)(?=Answer:|Options:|\Z)', text)
+
+            if question_match:
+                current_question = question_match.group(1).strip()
+                logging.debug(f"Found question {question_key}: {current_question}")
+
+                # Look for Answer: or Options: in the same line
+                if "Answer:" in text:
                     answer = text.split("Answer:")[1].strip()
                     # Determine type based on answer content
                     try:
@@ -66,33 +73,27 @@ def extract_data(doc):
                     except ValueError:
                         answer_type = "text"
 
+                    logging.debug(f"Answer type determined: {answer_type} for answer: {answer}")
                     sheet2_data.append([
                         current_exid, question_key, current_question,
-                        answer_type, "", answer  # Empty options for direct answers
+                        answer_type, "", answer
                     ])
                     question_key += 1
-                    current_question = None
-            elif "Options:" in text and "answer:" in text:
-                # Handle multiple choice questions
-                try:
-                    question, options_answer = text.split("Options:")
-                    options, answer = options_answer.split("answer:")
-                    answer = answer.strip()
+                elif "Options:" in text:
+                    options_part = text.split("Options:")[1]
+                    options, answer = options_part.split("answer:")
                     options = options.strip()
+                    answer = answer.strip()
 
                     # Determine type based on answer format
                     answer_type = "checkbox" if ',' in answer else "radio"
 
+                    logging.debug(f"Options type determined: {answer_type} for answer: {answer}")
                     sheet2_data.append([
-                        current_exid, question_key, question.strip(),
+                        current_exid, question_key, current_question,
                         answer_type, options, answer
                     ])
                     question_key += 1
-                except Exception as e:
-                    logging.error(f"Error parsing question: {text}. Error: {str(e)}")
-            elif not any(text.startswith(prefix) for prefix in ["Options:", "Answer:"]):
-                # If this line doesn't start with any special prefix, it's a question
-                current_question = text
 
     return sheet1_data, sheet2_data
 
