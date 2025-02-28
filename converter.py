@@ -51,36 +51,37 @@ def extract_data(doc):
             current_exid = text.split("exid :")[1].strip()
             question_key = 1  # Reset question key for new exid
             collecting_questions = False
+            current_question = None
         elif text == "Answer the following questions:":
             collecting_questions = True
             logging.debug("Started collecting questions")
         elif collecting_questions:
             # Check for numbered question pattern (e.g., "1)", "2)")
             import re
-            question_match = re.match(r'^\d+\)(.*?)(?=Answer:|Options:|\Z)', text)
+            question_match = re.match(r'^\d+\)(.*)', text)
 
             if question_match:
                 current_question = question_match.group(1).strip()
                 logging.debug(f"Found question {question_key}: {current_question}")
+            elif current_question and text.startswith("Answer:"):
+                answer = text.split("Answer:")[1].strip()
+                # Determine type based on answer content
+                try:
+                    float(answer)  # Try converting to number
+                    answer_type = "number"
+                except ValueError:
+                    answer_type = "text"
 
-                # Look for Answer: or Options: in the same line
-                if "Answer:" in text:
-                    answer = text.split("Answer:")[1].strip()
-                    # Determine type based on answer content
-                    try:
-                        float(answer)  # Check if answer is numeric
-                        answer_type = "number"
-                    except ValueError:
-                        answer_type = "text"
-
-                    logging.debug(f"Answer type determined: {answer_type} for answer: {answer}")
-                    sheet2_data.append([
-                        current_exid, question_key, current_question,
-                        answer_type, "", answer
-                    ])
-                    question_key += 1
-                elif "Options:" in text:
-                    options_part = text.split("Options:")[1]
+                logging.debug(f"Answer type determined: {answer_type} for answer: {answer}")
+                sheet2_data.append([
+                    current_exid, question_key, current_question,
+                    answer_type, "", answer
+                ])
+                question_key += 1
+                current_question = None
+            elif current_question and "Options:" in text:
+                options_part = text.split("Options:")[1]
+                if "answer:" in options_part:
                     options, answer = options_part.split("answer:")
                     options = options.strip()
                     answer = answer.strip()
@@ -94,6 +95,7 @@ def extract_data(doc):
                         answer_type, options, answer
                     ])
                     question_key += 1
+                    current_question = None
 
     return sheet1_data, sheet2_data
 
