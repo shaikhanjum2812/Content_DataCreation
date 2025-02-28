@@ -21,6 +21,7 @@ def extract_data(doc):
     }
     question_key = 1
     collecting_questions = False
+    current_question = None
 
     for para in doc.paragraphs:
         text = para.text.strip()
@@ -50,36 +51,49 @@ def extract_data(doc):
             current_exid = text.split("exid :")[1].strip()
             question_key = 1  # Reset question key for new exid
             collecting_questions = False
+            current_question = None
         elif "Answer the following questions:" in text:
             collecting_questions = True  # Start collecting questions
             question_key = 1  # Reset counter for new question set
-        elif collecting_questions and "Options:" in text and "answer:" in text:
-            try:
-                label, options_answer = text.split("Options:")
-                options, answer = options_answer.split("answer:")
-                answer = answer.strip()
-                options = options.strip()
-
-                # Determine the answer type based on content
-                if ',' in answer:
-                    answer_type = "checkbox"  # Multiple answers
-                elif options:  # Has options but single answer
-                    answer_type = "radio"
-                else:  # No options
+        elif collecting_questions:
+            if text.startswith("Answer:"):
+                # Process answer for the current question
+                if current_question:
+                    answer = text.split("Answer:")[1].strip()
+                    # Determine type based on answer content
                     try:
                         float(answer)  # Try converting to number
                         answer_type = "number"
                     except ValueError:
                         answer_type = "text"
 
-                sheet2_data.append([
-                    current_exid, question_key, label.strip(),
-                    answer_type, options, answer
-                ])
-                question_key += 1
+                    sheet2_data.append([
+                        current_exid, question_key, current_question,
+                        answer_type, "", answer  # Empty options for direct answers
+                    ])
+                    question_key += 1
+                    current_question = None
+            elif "Options:" in text and "answer:" in text:
+                # Handle multiple choice questions
+                try:
+                    label, options_answer = text.split("Options:")
+                    options, answer = options_answer.split("answer:")
+                    answer = answer.strip()
+                    options = options.strip()
 
-            except Exception as e:
-                logging.error(f"Error parsing question: {text}. Error: {str(e)}")
+                    # Determine type based on answer format
+                    answer_type = "checkbox" if ',' in answer else "radio"
+
+                    sheet2_data.append([
+                        current_exid, question_key, label.strip(),
+                        answer_type, options, answer
+                    ])
+                    question_key += 1
+                except Exception as e:
+                    logging.error(f"Error parsing question: {text}. Error: {str(e)}")
+            elif collecting_questions and not text.startswith(("Options:", "Answer:")):
+                # This must be a question
+                current_question = text.strip()
 
     return sheet1_data, sheet2_data
 
