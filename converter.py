@@ -52,17 +52,16 @@ def extract_data(doc):
             question_key = 1  # Reset question key for new exid
             collecting_questions = False
             current_question = None
-        elif "Answer the following questions:" in text:
+        elif text == "Answer the following questions:":
             collecting_questions = True  # Start collecting questions
             question_key = 1  # Reset counter for new question set
         elif collecting_questions:
             if text.startswith("Answer:"):
-                # Process answer for the current question
-                if current_question:
+                if current_question:  # Make sure we have a question to process
                     answer = text.split("Answer:")[1].strip()
                     # Determine type based on answer content
                     try:
-                        float(answer)  # Try converting to number
+                        float(answer)  # Check if answer is numeric
                         answer_type = "number"
                     except ValueError:
                         answer_type = "text"
@@ -76,7 +75,7 @@ def extract_data(doc):
             elif "Options:" in text and "answer:" in text:
                 # Handle multiple choice questions
                 try:
-                    label, options_answer = text.split("Options:")
+                    question, options_answer = text.split("Options:")
                     options, answer = options_answer.split("answer:")
                     answer = answer.strip()
                     options = options.strip()
@@ -85,15 +84,15 @@ def extract_data(doc):
                     answer_type = "checkbox" if ',' in answer else "radio"
 
                     sheet2_data.append([
-                        current_exid, question_key, label.strip(),
+                        current_exid, question_key, question.strip(),
                         answer_type, options, answer
                     ])
                     question_key += 1
                 except Exception as e:
                     logging.error(f"Error parsing question: {text}. Error: {str(e)}")
-            elif collecting_questions and not text.startswith(("Options:", "Answer:")):
-                # This must be a question
-                current_question = text.strip()
+            elif not any(text.startswith(prefix) for prefix in ["Options:", "Answer:"]):
+                # If this line doesn't start with any special prefix, it's a question
+                current_question = text
 
     return sheet1_data, sheet2_data
 
