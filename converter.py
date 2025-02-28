@@ -50,7 +50,7 @@ def extract_data(doc):
             question_key = 1
         elif "Options:" in text and "answer:" in text:
             try:
-                question, options_answer = text.split("Options:")
+                label, options_answer = text.split("Options:")
                 options, answer = options_answer.split("answer:")
                 answer = answer.strip()
                 options = options.strip()
@@ -68,7 +68,7 @@ def extract_data(doc):
                         answer_type = "text"
 
                 sheet2_data.append([
-                    current_exid, question_key, question.strip(),
+                    current_exid, question_key, label.strip(),  # Using label instead of question
                     answer_type, options, answer
                 ])
                 question_key += 1
