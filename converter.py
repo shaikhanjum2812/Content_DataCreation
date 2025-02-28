@@ -55,9 +55,21 @@ def extract_data(doc):
                 answer = answer.strip()
                 options = options.strip()
 
+                # Determine the answer type based on content
+                if ',' in answer:
+                    answer_type = "checkbox"  # Multiple answers
+                elif options:  # Has options but single answer
+                    answer_type = "radio"
+                else:  # No options
+                    try:
+                        float(answer)  # Try converting to number
+                        answer_type = "number"
+                    except ValueError:
+                        answer_type = "text"
+
                 sheet2_data.append([
                     current_exid, question_key, question.strip(),
-                    "multiple_choice", options, answer
+                    answer_type, options, answer
                 ])
                 question_key += 1
 
