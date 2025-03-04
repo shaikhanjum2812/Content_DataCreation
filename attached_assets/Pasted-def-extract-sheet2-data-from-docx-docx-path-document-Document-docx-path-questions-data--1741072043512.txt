@@ -1,0 +1,71 @@
+def extract_sheet2_data_from_docx(docx_path):
+    document = Document(docx_path)
+    questions_data = []
+    exid = ""
+    question_key = 1
+    hint = ""
+
+    for para in document.paragraphs:
+        text = para.text.strip()
+        
+        if text.startswith("exid :"):
+            exid = text.split("exid :")[1].strip()
+            question_key = 1
+        elif text.startswith("Answer the following questions:"):
+            continue
+        elif "Options:" in text and "answer:" in text:
+            try:
+                question, options_answer = text.split("Options:")
+                options, answer_hint = options_answer.split("answer:")
+                options = options.strip().split(',')
+                
+                # Extract answer and hint correctly
+                if "Hint:" in answer_hint:
+                    answer, hint = answer_hint.split("Hint:")
+                else:
+                    answer = answer_hint.strip()
+                    hint = ""  # No hint provided
+                
+                answer = answer.strip()
+                hint = hint.strip()
+                
+                if ',' in answer:
+                    answer_type = "checkbox"
+                else:
+                    answer_type = "radio"
+                    answer = int(answer)
+
+                questions_data.append([exid, question_key, question.strip(), answer_type, ','.join(options), answer, hint])
+                question_key += 1
+            except ValueError:
+                print(f"Warning: Couldn't parse question options and answer in: {text}")
+                continue
+        elif "Answer:" in text:
+            try:
+                question, answer_hint = text.split("Answer:")
+                
+                # Extract answer and hint correctly
+                if "Hint:" in answer_hint:
+                    answer, hint = answer_hint.split("Hint:")
+                else:
+                    answer = answer_hint.strip()
+                    hint = ""  # No hint provided
+                
+                answer = answer.strip()
+                hint = hint.strip()
+                
+                try:
+                    answer = float(answer)
+                    answer_type = "number"
+                    if answer.is_integer():
+                        answer = int(answer)
+                except ValueError:
+                    answer_type = "text"
+
+                questions_data.append([exid, question_key, question.strip(), answer_type, "", answer, hint])
+                question_key += 1
+            except ValueError:
+                print(f"Warning: Couldn't parse question and answer in: {text}")
+                continue
+            
+    return questions_data
