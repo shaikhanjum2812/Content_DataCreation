@@ -172,8 +172,8 @@ def extract_sheet1_data(doc):
                 if field == 'labels':
                     exercises_data.append(list(current_data.values()))
                     logger.info(f"Added exercise data: {current_data['exid']}")
-                    current_data = {k: '' if isinstance(v, str) else 0 
-                                  for k, v in current_data.items()}
+                    current_data = {k: '' if isinstance(v, str) else 0
+                                    for k, v in current_data.items()}
                 break
 
     logger.info(f"Total exercises extracted: {len(exercises_data)}")
@@ -247,11 +247,11 @@ def convert_word_to_excel(input_path, output_path):
             return False
 
         # Create DataFrames
-        columns_sheet1 = ['exid', 'title', 'description', 'category', 
-                         'subcategoryid', 'level', 'language', 'qlocation', 
-                         'module', 'ex_seq', 'cat_seq', 'subcat_seq', 
+        columns_sheet1 = ['exid', 'title', 'description', 'category',
+                         'subcategoryid', 'level', 'language', 'qlocation',
+                         'module', 'ex_seq', 'cat_seq', 'subcat_seq',
                          'league', 'labels']
-        columns_sheet2 = ['exid', 'key', 'label', 'type', 'options', 
+        columns_sheet2 = ['exid', 'key', 'label', 'type', 'options',
                          'answer', 'hint']
 
         df_sheet1 = pd.DataFrame(sheet1_data, columns=columns_sheet1)
@@ -270,6 +270,61 @@ def convert_word_to_excel(input_path, output_path):
     except Exception as e:
         logger.error(f"Error converting file: {str(e)}")
         raise
+
+def create_text_files(input_path):
+    """
+    Creates text files from code blocks in a Word document and returns a zip file path.
+    """
+    try:
+        doc = Document(input_path)
+        temp_dir = tempfile.mkdtemp()
+
+        # Extract code blocks
+        queries = []
+        collecting_code = False
+        current_code = []
+        qlocation = None
+
+        for para in doc.paragraphs:
+            text = para.text.strip()
+
+            if text.startswith("qlocation :"):
+                qlocation = text.split("qlocation :")[1].strip()
+                if not qlocation.endswith('.txt'):
+                    qlocation = f"{qlocation}.txt"
+
+            elif text.startswith("Code:"):
+                collecting_code = True
+                current_code = []
+
+            elif collecting_code and "Answer the following questions:" in text:
+                if current_code and qlocation:
+                    queries.append({
+                        "qlocation": qlocation,
+                        "code": "\n".join(current_code)
+                    })
+                collecting_code = False
+                current_code = []
+
+            elif collecting_code:
+                current_code.append(text)
+
+        # Create text files and add to zip
+        zip_path = os.path.join(tempfile.gettempdir(), 'code_files.zip')
+        with ZipFile(zip_path, 'w') as zipf:
+            for query in queries:
+                file_path = os.path.join(temp_dir, query["qlocation"])
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    f.write(query["code"])
+                zipf.write(file_path, query["qlocation"])
+
+        shutil.rmtree(temp_dir)
+        return zip_path
+
+    except Exception as e:
+        logger.error(f"Error creating text files: {str(e)}")
+        raise
+
 
 if __name__ == "__main__":
     # Create output directory if it doesn't exist
