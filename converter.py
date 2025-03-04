@@ -218,7 +218,7 @@ def convert_word_to_excel(input_path, output_path):
                          'subcategoryid', 'level', 'language', 'qlocation', 
                          'module', 'ex_seq', 'cat_seq', 'subcat_seq', 
                          'league', 'labels']
-        columns_sheet2 = ['exid', 'key', 'question', 'type', 'options', 
+        columns_sheet2 = ['exid', 'key', 'label', 'type', 'options', 
                          'answer']
 
         df_sheet1 = pd.DataFrame(sheet1_data, columns=columns_sheet1)

@@ -283,8 +283,8 @@ def convert_word_to_excel(input_path, output_path, mode='reader'):
                          'subcategoryid', 'level', 'language', 'qlocation', 
                          'module', 'ex_seq', 'cat_seq', 'subcat_seq', 
                          'league', 'labels']
-        columns_sheet2 = ['exid', 'key', 'label', 'type', 'options', 
-                         'answer', 'Hint']
+        columns_sheet2 = ['exid', 'key', 'question', 'type', 'options', 
+                         'answer', 'Hint'] #Corrected this line
 
         df_sheet1 = pd.DataFrame(sheet1_data, columns=columns_sheet1)
         df_sheet2 = pd.DataFrame(sheet2_data, columns=columns_sheet2)
