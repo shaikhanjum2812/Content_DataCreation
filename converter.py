@@ -23,7 +23,7 @@ def extract_sheet2_data(doc):
 
     logger.info("Starting QA data extraction...")
 
-    # First get EXID
+    # First find EXID
     for para in doc.paragraphs:
         text = para.text.strip()
         if text.startswith("exid :"):
@@ -35,33 +35,32 @@ def extract_sheet2_data(doc):
         logger.error("No EXID found in document")
         return []
 
-    # Now process paragraphs
-    for i in range(len(doc.paragraphs)):
+    # Now extract QA pairs
+    i = 0
+    while i < len(doc.paragraphs):
         text = doc.paragraphs[i].text.strip()
 
         if not text:
+            i += 1
             continue
-
-        logger.debug(f"Processing paragraph {i}: {text}")
 
         if "Answer the following questions:" in text:
             in_qa_section = True
-            logger.info("Entered QA section")
+            logger.debug("Entered QA section")
+            i += 1
             continue
 
-        if not in_qa_section:
-            continue
-
-        if text.lower().startswith("question"):
+        if in_qa_section and text.lower().startswith("question"):
             try:
-                # Extract question text
-                question_text = text.split(":", 1)[1].strip() if ":" in text else text
-                logger.info(f"Found question: {question_text}")
+                # Get question text
+                question_parts = text.split(":", 1)
+                question_text = question_parts[1].strip() if len(question_parts) > 1 else text
+                logger.debug(f"Processing question: {question_text}")
 
-                # Look ahead for the answer line
+                # Look ahead for answer
                 if i + 1 < len(doc.paragraphs):
                     answer_text = doc.paragraphs[i + 1].text.strip()
-                    logger.debug(f"Processing answer: {answer_text}")
+                    logger.debug(f"Processing answer text: {answer_text}")
 
                     if "Options:" in answer_text and "answer:" in answer_text:
                         # Handle MCQ format
@@ -78,11 +77,11 @@ def extract_sheet2_data(doc):
                             hint = hint.strip()
 
                         answer_type = "checkbox" if "," in answer else "radio"
-                        try:
-                            if answer_type == "radio":
+                        if answer_type == "radio":
+                            try:
                                 answer = int(answer)
-                        except ValueError:
-                            pass
+                            except ValueError:
+                                pass
 
                         qa_entry = [
                             current_exid,
@@ -94,9 +93,7 @@ def extract_sheet2_data(doc):
                             hint
                         ]
                         questions_data.append(qa_entry)
-                        logger.info(f"Added MCQ - Key: {question_key}, Type: {answer_type}")
-                        logger.debug(f"QA Entry: {qa_entry}")
-                        question_key += 1
+                        logger.info(f"Added MCQ - Key: {question_key}")
 
                     elif "Answer:" in answer_text:
                         # Handle direct answer format
@@ -127,17 +124,24 @@ def extract_sheet2_data(doc):
                             hint
                         ]
                         questions_data.append(qa_entry)
-                        logger.info(f"Added Direct Answer - Key: {question_key}, Type: {answer_type}")
-                        logger.debug(f"QA Entry: {qa_entry}")
-                        question_key += 1
+                        logger.info(f"Added Direct Answer - Key: {question_key}")
+
+                    question_key += 1
+                    i += 2  # Skip the answer line
+                    continue
 
             except Exception as e:
                 logger.error(f"Error processing QA pair: {str(e)}")
-                logger.error(f"Question: {text}")
+                logger.error(f"Question text: {text}")
                 if i + 1 < len(doc.paragraphs):
-                    logger.error(f"Answer: {doc.paragraphs[i + 1].text.strip()}")
+                    logger.error(f"Answer text: {doc.paragraphs[i + 1].text.strip()}")
 
-    logger.info(f"Total questions extracted: {len(questions_data)}")
+        i += 1
+
+    logger.info(f"Completed QA extraction. Total questions: {len(questions_data)}")
+    for qa in questions_data:
+        logger.debug(f"Extracted QA: {qa}")
+
     return questions_data
 
 def extract_sheet1_data(doc):
@@ -180,13 +184,14 @@ def extract_sheet1_data(doc):
     return exercises_data
 
 def create_test_document():
-    """Creates a test document for QA extraction"""
+    """Creates a test document with proper structure for data extraction"""
     doc = Document()
+    logger.info("Creating test document with exercise data and QA sections")
 
-    # Add exercise metadata
+    # Add exercise metadata with correct formatting
     doc.add_paragraph("exid : TEST001")
     doc.add_paragraph("title : Test Exercise")
-    doc.add_paragraph("description : This is a test exercise")
+    doc.add_paragraph("description : This is a test exercise for data extraction")
     doc.add_paragraph("category : Testing")
     doc.add_paragraph("subcategoryid : TEST")
     doc.add_paragraph("level : 1")
@@ -199,32 +204,36 @@ def create_test_document():
     doc.add_paragraph("league : beginner")
     doc.add_paragraph("labels : test,example")
 
-    # Add empty line before questions
-    doc.add_paragraph("")
+    # Add code section
+    doc.add_paragraph("Code:")
+    doc.add_paragraph("def hello_world():")
+    doc.add_paragraph("    print('Hello, World!')")
+    doc.add_paragraph("    return True")
 
-    # Add questions section marker
+    # Add QA section marker
     doc.add_paragraph("Answer the following questions:")
-    doc.add_paragraph("")
 
-    # Add MCQ with hint
-    doc.add_paragraph("Question 1: What is the output of print('Hello, World!')?")
-    doc.add_paragraph("Options: Hello World,Hi World,Hello, World!,World Hello answer: 3 Hint: Look at the quotes")
+    # Add questions with different formats
+    # MCQ with hint
+    doc.add_paragraph("Question 1: What will be the output of hello_world()?")
+    doc.add_paragraph("Options: Hello World,Hi World,Hello, World!,World Hello answer: 3 Hint: Look at the print statement")
 
-    # Add Checkbox with hint
-    doc.add_paragraph("Question 2: What are valid Python data types?")
-    doc.add_paragraph("Options: int,float,str,bool answer: 1,2,3,4 Hint: All basic types")
+    # Checkbox with hint
+    doc.add_paragraph("Question 2: What Python concepts are used in the code?")
+    doc.add_paragraph("Options: function definition,print statement,return statement,variables answer: 1,2,3 Hint: Look at code structure")
 
-    # Add Number answer with hint
-    doc.add_paragraph("Question 3: What is 2 + 2?")
-    doc.add_paragraph("Answer: 4 Hint: Basic arithmetic")
+    # Number answer with hint
+    doc.add_paragraph("Question 3: How many lines of code are in the function?")
+    doc.add_paragraph("Answer: 2 Hint: Count the indented lines")
 
-    # Add Text answer with hint
-    doc.add_paragraph("Question 4: What are functions in programming?")
-    doc.add_paragraph("Answer: Reusable blocks of code Hint: Think about code organization")
+    # Text answer with hint
+    doc.add_paragraph("Question 4: What is the purpose of the return statement?")
+    doc.add_paragraph("Answer: To indicate successful execution Hint: Think about function behavior")
 
+    # Save test document
     test_path = "test_document.docx"
     doc.save(test_path)
-    logger.info(f"Created test document: {test_path}")
+    logger.info(f"Created test document at {test_path}")
     return test_path
 
 def convert_word_to_excel(input_path, output_path):
