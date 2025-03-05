@@ -1,13 +1,13 @@
+import os
 import logging
 from docx import Document
 from openpyxl import Workbook
 import pandas as pd
-import os
 import tempfile
 import shutil
 from zipfile import ZipFile
 
-# Set up logging
+# Configure logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ def extract_sheet1_data_from_docx(docx_path):
         text = para.text.strip()
 
         if text.startswith("exid :"):
-            if current_exid:  # Save previous entry if exists
+            if current_exid:
                 data.append([
                     current_exid, current_title, current_description, current_category,
                     current_subcategoryid, current_level, current_language, current_qlocation,
@@ -82,7 +82,6 @@ def extract_sheet1_data_from_docx(docx_path):
         elif text.startswith("labels :"):
             current_labels = text.split("labels :")[1].strip()
 
-    # Add the last entry if exists
     if current_exid:
         data.append([
             current_exid, current_title, current_description, current_category,

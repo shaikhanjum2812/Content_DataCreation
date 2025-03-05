@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 # Initialize Flask app
-app = Flask(__name__, template_folder='templates')
+app = Flask(__name__, template_folder='templates', static_folder='static')
 app.secret_key = os.environ.get("SESSION_SECRET", "default-secret-key")
 
 # Configure upload settings
@@ -21,7 +21,12 @@ def allowed_file(filename):
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    logger.debug("Accessing index route")
+    try:
+        return render_template('index.html')
+    except Exception as e:
+        logger.error(f"Error rendering template: {str(e)}", exc_info=True)
+        return "Error loading page", 500
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
