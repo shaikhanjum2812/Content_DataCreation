@@ -246,38 +246,86 @@ def convert_word_to_excel(input_path, output_path):
         sheet1_data = extract_sheet1_data(doc)
         sheet2_data = extract_sheet2_data(doc)
 
-        # Log extraction results
+        # Verify extracted data
         logger.info("\nExtraction Summary:")
         logger.info(f"Number of exercises: {len(sheet1_data)}")
         logger.info(f"Number of questions: {len(sheet2_data)}")
 
-        if not sheet1_data or not sheet2_data:
-            logger.error("No data extracted!")
+        if not sheet1_data:
+            logger.error("No exercise data extracted!")
             return False
 
-        # Create DataFrames
-        columns_sheet1 = ['exid', 'title', 'description', 'category',
-                         'subcategoryid', 'level', 'language', 'qlocation',
-                         'module', 'ex_seq', 'cat_seq', 'subcat_seq',
+        if not sheet2_data:
+            logger.error("No QA data extracted!")
+            return False
+
+        # Create DataFrames with explicit data
+        columns_sheet1 = ['exid', 'title', 'description', 'category', 
+                         'subcategoryid', 'level', 'language', 'qlocation', 
+                         'module', 'ex_seq', 'cat_seq', 'subcat_seq', 
                          'league', 'labels']
-        columns_sheet2 = ['exid', 'key', 'label', 'type', 'options',
+        columns_sheet2 = ['exid', 'key', 'question', 'type', 'options', 
                          'answer', 'hint']
 
+        # Convert data to pandas DataFrame with explicit columns
         df_sheet1 = pd.DataFrame(sheet1_data, columns=columns_sheet1)
         df_sheet2 = pd.DataFrame(sheet2_data, columns=columns_sheet2)
 
-        # Write to Excel file
+        # Validate DataFrames
+        if df_sheet1.empty or df_sheet2.empty:
+            logger.error("One or both DataFrames are empty!")
+            return False
+
+        # Write to Excel file with proper formatting
         with pd.ExcelWriter(output_path, engine='openpyxl') as writer:
+            # Write Sheet 1
             df_sheet1.to_excel(writer, sheet_name='ex_data', index=False)
+            worksheet1 = writer.sheets['ex_data']
+            for column in worksheet1.columns:
+                max_length = 0
+                column = [cell for cell in column]
+                for cell in column:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(cell.value)
+                    except:
+                        pass
+                adjusted_width = (max_length + 2)
+                worksheet1.column_dimensions[column[0].column_letter].width = adjusted_width
+
+            # Write Sheet 2
             df_sheet2.to_excel(writer, sheet_name='qa_data', index=False)
+            worksheet2 = writer.sheets['qa_data']
+            for column in worksheet2.columns:
+                max_length = 0
+                column = [cell for cell in column]
+                for cell in column:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(cell.value)
+                    except:
+                        pass
+                adjusted_width = (max_length + 2)
+                worksheet2.column_dimensions[column[0].column_letter].width = adjusted_width
 
         logger.info(f"Successfully wrote data to Excel: {output_path}")
         logger.info(f"Sheet1 rows: {len(df_sheet1)}")
         logger.info(f"Sheet2 rows: {len(df_sheet2)}")
+
+        # Verify file was created and has content
+        if not os.path.exists(output_path):
+            logger.error("Excel file was not created!")
+            return False
+
+        if os.path.getsize(output_path) == 0:
+            logger.error("Excel file is empty!")
+            return False
+
         return True
 
     except Exception as e:
         logger.error(f"Error converting file: {str(e)}")
+        logger.error("Stack trace:", exc_info=True)
         raise
 
 def create_text_files(input_path):
