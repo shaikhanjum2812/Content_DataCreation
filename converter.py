@@ -197,28 +197,39 @@ def create_text_files(input_path):
         qlocation = None
 
         for para in doc.paragraphs:
-            text = para.text.strip()
+            text = para.text.rstrip()  # Only remove trailing whitespace
 
-            if text.startswith("qlocation :"):
+            if text.lstrip().startswith("qlocation :"):
                 qlocation = text.split("qlocation :")[1].strip()
                 if not qlocation.endswith('.txt'):
                     qlocation = f"{qlocation}.txt"
 
-            elif text.startswith("Code:"):
+            elif text.lstrip().startswith("Code:"):
                 collecting_code = True
                 current_code = []
 
             elif collecting_code and "Answer the following questions:" in text:
                 if current_code and qlocation:
+                    # Join lines preserving original indentation
+                    code_content = "\n".join(current_code)
                     queries.append({
                         "qlocation": qlocation,
-                        "code": "\n".join(current_code)
+                        "code": code_content
                     })
                 collecting_code = False
                 current_code = []
 
             elif collecting_code:
+                # Preserve empty lines and original indentation
                 current_code.append(text)
+
+        # Add the last code block if exists
+        if collecting_code and current_code and qlocation:
+            code_content = "\n".join(current_code)
+            queries.append({
+                "qlocation": qlocation,
+                "code": code_content
+            })
 
         # Create zip file with text files
         zip_path = os.path.join(tempfile.gettempdir(), 'code_files.zip')
@@ -229,6 +240,7 @@ def create_text_files(input_path):
                     f.write(query["code"])
                 zipf.write(file_path, query["qlocation"])
 
+        # Clean up temporary directory
         shutil.rmtree(temp_dir)
         return zip_path
 
